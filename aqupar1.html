@@ -1,0 +1,2019 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aquarium Paradise</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            overflow: hidden;
+            background: #dfe8e9;
+            font-family: Arial, sans-serif;
+        }
+
+        #loading {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #022631, #08728b);
+            color: white;
+            font-size: 32px;
+            font-weight: bold;
+            letter-spacing: 3px;
+        }
+
+        #loading small {
+            margin-top: 15px;
+            font-size: 14px;
+            letter-spacing: 1px;
+            font-weight: normal;
+        }
+
+        #ui {
+            position: fixed;
+            z-index: 50;
+            top: 18px;
+            left: 18px;
+            padding: 14px 18px;
+            color: white;
+            background: rgba(0, 20, 25, .7);
+            border-radius: 12px;
+            line-height: 1.6;
+            backdrop-filter: blur(8px);
+        }
+
+        #ui b {
+            color: #6cecff;
+        }
+
+        #message {
+            position: fixed;
+            z-index: 50;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            background: rgba(0, 0, 0, .65);
+            padding: 12px 25px;
+            border-radius: 30px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loading">
+        AQUARIUM PARADISE
+        <small>Preparing the underwater world...</small>
+    </div>
+
+    <div id="ui">
+        <b>🐠 AQUARIUM PARADISE</b><br>
+        <small>W / S / A / D — Walk</small><br>
+        <small>Mouse — Look Around</small>
+    </div>
+
+    <div id="message">
+        Click anywhere to enter
+    </div>
+
+    <script type="importmap">
+{
+    "imports":{
+        "three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+}
+</script>
+
+    <script type="module">
+
+        import * as THREE from "three";
+        import { PointerLockControls }
+            from "three/addons/controls/PointerLockControls.js";
+
+
+        /* =========================================================
+           SCENE
+        ========================================================= */
+
+        const scene = new THREE.Scene();
+
+        scene.background = new THREE.Color(0xdce5e6);
+
+        scene.fog = new THREE.Fog(
+            0xdce5e6,
+            40,
+            130
+        );
+
+
+        /* =========================================================
+           CAMERA
+        ========================================================= */
+
+        const camera =
+            new THREE.PerspectiveCamera(
+                70,
+                window.innerWidth /
+                window.innerHeight,
+                .1,
+                500
+            );
+
+        camera.position.set(
+            0,
+            1.7,
+            47
+        );
+
+
+        /* =========================================================
+           RENDERER
+        ========================================================= */
+
+        const renderer =
+            new THREE.WebGLRenderer({
+                antialias: true
+            });
+
+        renderer.setSize(
+            window.innerWidth,
+            window.innerHeight
+        );
+
+        renderer.setPixelRatio(
+            Math.min(
+                window.devicePixelRatio,
+                2
+            )
+        );
+
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type =
+            THREE.PCFSoftShadowMap;
+
+        renderer.outputColorSpace =
+            THREE.SRGBColorSpace;
+
+        document.body.appendChild(
+            renderer.domElement
+        );
+
+
+        /* =========================================================
+           LIGHTING
+        ========================================================= */
+
+        const ambient =
+            new THREE.HemisphereLight(
+                0xffffff,
+                0x40575c,
+                2.2
+            );
+
+        scene.add(ambient);
+
+        const sunlight =
+            new THREE.DirectionalLight(
+                0xffffff,
+                2.5
+            );
+
+        sunlight.position.set(
+            10,
+            25,
+            20
+        );
+
+        sunlight.castShadow = true;
+
+        scene.add(sunlight);
+
+
+        /* =========================================================
+           FLOOR
+        ========================================================= */
+
+        const floor =
+            new THREE.Mesh(
+                new THREE.PlaneGeometry(
+                    180,
+                    180
+                ),
+                new THREE.MeshStandardMaterial({
+                    color: 0xc7cdcc,
+                    roughness: .75
+                })
+            );
+
+        floor.rotation.x =
+            -Math.PI / 2;
+
+        floor.receiveShadow = true;
+
+        scene.add(floor);
+
+
+        /* =========================================================
+           WALLS
+        ========================================================= */
+
+        const wallMaterial =
+            new THREE.MeshStandardMaterial({
+                color: 0xf0f2f0,
+                roughness: .8
+            });
+
+        const darkMaterial =
+            new THREE.MeshStandardMaterial({
+                color: 0x123b44,
+                roughness: .55
+            });
+
+
+        function wall(
+            x,
+            y,
+            z,
+            w,
+            h,
+            d,
+            material = wallMaterial
+        ) {
+
+            const mesh =
+                new THREE.Mesh(
+                    new THREE.BoxGeometry(
+                        w, h, d
+                    ),
+                    material
+                );
+
+            mesh.position.set(
+                x, y, z
+            );
+
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+
+            scene.add(mesh);
+
+            return mesh;
+        }
+
+
+        /* Building */
+
+        wall(
+            -17,
+            3.5,
+            0,
+            1,
+            7,
+            105
+        );
+
+        wall(
+            17,
+            3.5,
+            0,
+            1,
+            7,
+            105
+        );
+
+        wall(
+            0,
+            3.5,
+            -53,
+            34,
+            7,
+            1
+        );
+
+
+        /* =========================================================
+           CEILING
+        ========================================================= */
+
+        const ceiling =
+            new THREE.Mesh(
+                new THREE.PlaneGeometry(
+                    34,
+                    105
+                ),
+                new THREE.MeshStandardMaterial({
+                    color: 0xf8f8f6
+                })
+            );
+
+        ceiling.rotation.x =
+            Math.PI / 2;
+
+        ceiling.position.y = 7;
+
+        scene.add(ceiling);
+
+
+        /* =========================================================
+           CENTRAL WALKING PATH
+        ========================================================= */
+
+        const path =
+            new THREE.Mesh(
+                new THREE.PlaneGeometry(
+                    7,
+                    105
+                ),
+                new THREE.MeshStandardMaterial({
+                    color: 0xb6c4c4,
+                    roughness: .6
+                })
+            );
+
+        path.rotation.x =
+            -Math.PI / 2;
+
+        path.position.y = .02;
+
+        scene.add(path);
+
+
+        /* =========================================================
+           LIGHTS
+        ========================================================= */
+
+        function light(
+            x,
+            z
+        ) {
+
+            const l =
+                new THREE.PointLight(
+                    0xffffff,
+                    3,
+                    13
+                );
+
+            l.position.set(
+                x,
+                6.3,
+                z
+            );
+
+            scene.add(l);
+
+            const lamp =
+                new THREE.Mesh(
+                    new THREE.BoxGeometry(
+                        2,
+                        .08,
+                        .3
+                    ),
+                    new THREE.MeshBasicMaterial({
+                        color: 0xffffff
+                    })
+                );
+
+            lamp.position.set(
+                x,
+                6.8,
+                z
+            );
+
+            scene.add(lamp);
+        }
+
+        for (
+            let z = -48;
+            z <= 48;
+            z += 6
+        ) {
+
+            light(0, z);
+        }
+
+
+        /* =========================================================
+           AQUARIUM ROOM
+        ========================================================= */
+
+        function createRoom(
+            side,
+            z,
+            name
+        ) {
+
+            const x =
+                side === "left"
+                    ? -10
+                    : 10;
+
+            const sideX =
+                side === "left"
+                    ? -16.5
+                    : 16.5;
+
+
+            /* Back wall */
+
+            wall(
+                x,
+                3.5,
+                z - 5,
+                13,
+                7,
+                .5,
+                darkMaterial
+            );
+
+
+            /* Side wall */
+
+            wall(
+                sideX,
+                3.5,
+                z,
+                .5,
+                7,
+                10,
+                darkMaterial
+            );
+
+
+            /* Aquarium */
+
+            createAquarium(
+                x,
+                3.1,
+                z - 4.15,
+                10,
+                5.4,
+                name
+            );
+        }
+
+
+        /* =========================================================
+           AQUARIUM
+        ========================================================= */
+
+        function createAquarium(
+            x,
+            y,
+            z,
+            width,
+            height,
+            name
+        ) {
+
+            /*
+               BACKGROUND
+               IMPORTANT:
+               This is only a thin back panel.
+               It does NOT cover the fish.
+            */
+
+            const background =
+                new THREE.Mesh(
+                    new THREE.PlaneGeometry(
+                        width,
+                        height
+                    ),
+                    new THREE.MeshStandardMaterial({
+                        color: 0x006178,
+                        roughness: .45
+                    })
+                );
+
+            background.position.set(
+                x,
+                y,
+                z - .45
+            );
+
+            background.rotation.y = 0;
+
+            scene.add(background);
+
+
+            /*
+               WATER LAYER
+            */
+
+            const water =
+                new THREE.Mesh(
+                    new THREE.PlaneGeometry(
+                        width - .15,
+                        height - .15
+                    ),
+                    new THREE.MeshPhysicalMaterial({
+                        color: 0x00a3c7,
+                        transparent: true,
+                        opacity: .22,
+                        roughness: .05
+                    })
+                );
+
+            water.position.set(
+                x,
+                y,
+                z + .02
+            );
+
+            scene.add(water);
+
+
+            /*
+               GLASS FRONT
+            */
+
+            const glass =
+                new THREE.Mesh(
+                    new THREE.PlaneGeometry(
+                        width,
+                        height
+                    ),
+                    new THREE.MeshPhysicalMaterial({
+                        color: 0xb9f5ff,
+                        transparent: true,
+                        opacity: .10,
+                        roughness: .02
+                    })
+                );
+
+            glass.position.set(
+                x,
+                y,
+                z + .25
+            );
+
+            scene.add(glass);
+
+
+            /*
+               TOP FRAME
+            */
+
+            const frameMaterial =
+                new THREE.MeshStandardMaterial({
+                    color: 0x26383c,
+                    metalness: .7,
+                    roughness: .25
+                });
+
+
+            const topFrame =
+                new THREE.Mesh(
+                    new THREE.BoxGeometry(
+                        width + .35,
+                        .28,
+                        .35
+                    ),
+                    frameMaterial
+                );
+
+            topFrame.position.set(
+                x,
+                y + height / 2,
+                z + .25
+            );
+
+            scene.add(topFrame);
+
+
+            const bottomFrame =
+                new THREE.Mesh(
+                    new THREE.BoxGeometry(
+                        width + .35,
+                        .28,
+                        .35
+                    ),
+                    frameMaterial
+                );
+
+            bottomFrame.position.set(
+                x,
+                y - height / 2,
+                z + .25
+            );
+
+            scene.add(bottomFrame);
+
+
+            /*
+               SIDE FRAMES
+            */
+
+            for (
+                const side of [-1, 1]
+            ) {
+
+                const f =
+                    new THREE.Mesh(
+                        new THREE.BoxGeometry(
+                            .28,
+                            height,
+                            .35
+                        ),
+                        frameMaterial
+                    );
+
+                f.position.set(
+                    x +
+                    side * (width / 2),
+
+                    y,
+
+                    z + .25
+                );
+
+                scene.add(f);
+            }
+
+
+            /*
+               AQUARIUM LIGHT
+            */
+
+            const aquariumLight =
+                new THREE.PointLight(
+                    0x36eaff,
+                    5,
+                    14
+                );
+
+            aquariumLight.position.set(
+                x,
+                y + 1.8,
+                z + .8
+            );
+
+            scene.add(aquariumLight);
+
+
+            /*
+               ROCKS
+            */
+
+            for (
+                let i = 0;
+                i < 16;
+                i++
+            ) {
+
+                const rock =
+                    new THREE.Mesh(
+                        new THREE.DodecahedronGeometry(
+                            .15 +
+                            Math.random() * .3,
+                            1
+                        ),
+                        new THREE.MeshStandardMaterial({
+                            color: 0x63756f,
+                            roughness: 1
+                        })
+                    );
+
+                rock.position.set(
+                    x -
+                    width / 2 +
+                    .4 +
+                    Math.random() *
+                    (width - .8),
+
+                    y -
+                    height / 2 +
+                    .25,
+
+                    z +
+                    .15
+                );
+
+                scene.add(rock);
+            }
+
+
+            /*
+               PLANTS
+            */
+
+            for (
+                let i = 0;
+                i < 13;
+                i++
+            ) {
+
+                const plant =
+                    new THREE.Mesh(
+                        new THREE.ConeGeometry(
+                            .07,
+                            .8 +
+                            Math.random() * 1.4,
+                            7
+                        ),
+                        new THREE.MeshStandardMaterial({
+                            color:
+                                Math.random() > .5
+                                    ? 0x1b9b68
+                                    : 0x38bd79
+                        })
+                    );
+
+                plant.position.set(
+                    x -
+                    width / 2 +
+                    Math.random() *
+                    width,
+
+                    y -
+                    height / 2 +
+                    .7,
+
+                    z +
+                    .05
+                );
+
+                scene.add(plant);
+            }
+
+
+            /*
+               FISH
+        
+               IMPORTANT:
+               Fish are placed toward the
+               FRONT of the aquarium so
+               they are clearly visible.
+            */
+
+            for (
+                let i = 0;
+                i < 9;
+                i++
+            ) {
+
+                const fish =
+                    createFish(
+                        i
+                    );
+
+                fish.position.set(
+
+                    x -
+                    width / 2 +
+                    1 +
+                    Math.random() *
+                    (width - 2),
+
+                    y -
+                    height / 2 +
+                    1 +
+                    Math.random() *
+                    (height - 2),
+
+                    z +
+                    .55
+                );
+
+
+                fish.userData.baseX =
+                    fish.position.x;
+
+                fish.userData.baseY =
+                    fish.position.y;
+
+                fish.userData.baseZ =
+                    fish.position.z;
+
+                fish.userData.speed =
+                    .3 +
+                    Math.random() * .6;
+
+                fish.userData.range =
+                    .5 +
+                    Math.random() * 1.8;
+
+
+                scene.add(fish);
+            }
+
+
+            /*
+               TITLE
+            */
+
+            makeText(
+                name,
+                x,
+                y + height / 2 + 1.1,
+                z + .4
+            );
+        }
+
+
+        /* =========================================================
+           REALISTIC VISIBLE FISH
+        ========================================================= */
+
+        function createFish(index) {
+
+            const fish =
+                new THREE.Group();
+
+
+            const colors = [
+                0xff7a21,
+                0xffd21f,
+                0xff416c,
+                0x22d7ff,
+                0xffffff,
+                0x8d79ff,
+                0xff542f,
+                0x36e68c
+            ];
+
+
+            const color =
+                colors[
+                index %
+                colors.length
+                ];
+
+
+            /*
+               BODY
+            */
+
+            const body =
+                new THREE.Mesh(
+                    new THREE.SphereGeometry(
+                        .45,
+                        24,
+                        18
+                    ),
+                    new THREE.MeshStandardMaterial({
+                        color: color,
+                        roughness: .25,
+                        metalness: .05,
+                        emissive: color,
+                        emissiveIntensity: .08
+                    })
+                );
+
+            body.scale.set(
+                1.7,
+                .72,
+                .65
+            );
+
+            body.castShadow = true;
+
+            fish.add(body);
+
+
+            /*
+               HEAD HIGHLIGHT
+            */
+
+            const head =
+                new THREE.Mesh(
+                    new THREE.SphereGeometry(
+                        .36,
+                        20,
+                        16
+                    ),
+                    new THREE.MeshStandardMaterial({
+                        color: color,
+                        roughness: .2
+                    })
+                );
+
+            head.scale.set(
+                1.1,
+                .75,
+                .7
+            );
+
+            head.position.x = .28;
+
+            fish.add(head);
+
+
+            /*
+               TAIL
+            */
+
+            const tailGeometry =
+                new THREE.BufferGeometry();
+
+            const tailVertices =
+                new Float32Array([
+
+                    0, 0, 0,
+
+                    -.85, .55, 0,
+
+                    -.85, -.55, 0
+
+                ]);
+
+            tailGeometry.setAttribute(
+                "position",
+                new THREE.BufferAttribute(
+                    tailVertices,
+                    3
+                )
+            );
+
+            const tail =
+                new THREE.Mesh(
+                    tailGeometry,
+                    new THREE.MeshStandardMaterial({
+                        color: color,
+                        side: THREE.DoubleSide,
+                        emissive: color,
+                        emissiveIntensity: .1
+                    })
+                );
+
+            tail.position.x = -.65;
+
+            fish.add(tail);
+
+
+            /*
+               EYE LEFT
+            */
+
+            const eyeMaterial =
+                new THREE.MeshBasicMaterial({
+                    color: 0x000000
+                });
+
+
+            const eye1 =
+                new THREE.Mesh(
+                    new THREE.SphereGeometry(
+                        .075,
+                        12,
+                        12
+                    ),
+                    eyeMaterial
+                );
+
+            eye1.position.set(
+                .52,
+                .14,
+                -.32
+            );
+
+            fish.add(eye1);
+
+
+            /*
+               EYE RIGHT
+            */
+
+            const eye2 =
+                new THREE.Mesh(
+                    new THREE.SphereGeometry(
+                        .075,
+                        12,
+                        12
+                    ),
+                    eyeMaterial
+                );
+
+            eye2.position.set(
+                .52,
+                .14,
+                .32
+            );
+
+            fish.add(eye2);
+
+
+            /*
+               TOP FIN
+            */
+
+            const fin =
+                new THREE.Mesh(
+                    new THREE.ConeGeometry(
+                        .18,
+                        .5,
+                        3
+                    ),
+                    new THREE.MeshStandardMaterial({
+                        color: color,
+                        side: THREE.DoubleSide
+                    })
+                );
+
+            fin.position.set(
+                -.05,
+                .43,
+                0
+            );
+
+            fin.rotation.z =
+                Math.PI;
+
+            fish.add(fin);
+
+
+            /*
+               SIDE FIN
+            */
+
+            const sideFin =
+                new THREE.Mesh(
+                    new THREE.ConeGeometry(
+                        .12,
+                        .4,
+                        3
+                    ),
+                    new THREE.MeshStandardMaterial({
+                        color: color,
+                        side: THREE.DoubleSide
+                    })
+                );
+
+            sideFin.position.set(
+                .15,
+                -.05,
+                -.4
+            );
+
+            sideFin.rotation.x =
+                Math.PI / 2;
+
+            fish.add(sideFin);
+
+
+            /*
+               DIFFERENT FISH SIZES
+            */
+
+            const scale =
+                .75 +
+                Math.random() * .75;
+
+            fish.scale.setScalar(
+                scale
+            );
+
+
+            /*
+               IMPORTANT:
+               Rotate fish so the head
+               faces the viewer initially.
+            */
+
+            fish.rotation.y =
+                Math.PI;
+
+
+            return fish;
+        }
+
+
+        /* =========================================================
+           CREATE ROOMS
+        ========================================================= */
+
+        createRoom(
+            "left",
+            36,
+            "TROPICAL FISH"
+        );
+
+        createRoom(
+            "right",
+            36,
+            "COLORFUL REEF"
+        );
+
+        createRoom(
+            "left",
+            22,
+            "AMAZON RIVER"
+        );
+
+        createRoom(
+            "right",
+            22,
+            "CORAL KINGDOM"
+        );
+
+        createRoom(
+            "left",
+            8,
+            "DEEP OCEAN"
+        );
+
+        createRoom(
+            "right",
+            8,
+            "SHARK WORLD"
+        );
+
+        createRoom(
+            "left",
+            -8,
+            "TURTLE LAGOON"
+        );
+
+        createRoom(
+            "right",
+            -8,
+            "RARE FISH"
+        );
+
+        createRoom(
+            "left",
+            -24,
+            "UNDERWATER FOREST"
+        );
+
+        createRoom(
+            "right",
+            -24,
+            "EXOTIC SPECIES"
+        );
+
+
+        /* =========================================================
+           JELLYFISH DISPLAY
+        ========================================================= */
+
+        wall(
+            0,
+            3.5,
+            -39,
+            34,
+            7,
+            .5,
+            darkMaterial
+        );
+
+
+        const jellyTank =
+            new THREE.Mesh(
+                new THREE.PlaneGeometry(
+                    28,
+                    5.5
+                ),
+                new THREE.MeshStandardMaterial({
+                    color: 0x24104a,
+                    emissive: 0x10051e
+                })
+            );
+
+        jellyTank.position.set(
+            0,
+            3.2,
+            -38.6
+        );
+
+        scene.add(jellyTank);
+
+
+        makeText(
+            "JELLYFISH GALAXY",
+            0,
+            6.7,
+            -38
+        );
+
+
+        function jellyfish(
+            x,
+            y,
+            z
+        ) {
+
+            const group =
+                new THREE.Group();
+
+
+            const body =
+                new THREE.Mesh(
+                    new THREE.SphereGeometry(
+                        .5,
+                        24,
+                        16,
+                        0,
+                        Math.PI * 2,
+                        0,
+                        Math.PI / 2
+                    ),
+                    new THREE.MeshPhysicalMaterial({
+                        color:
+                            Math.random() > .5
+                                ? 0xf16cff
+                                : 0x55ddff,
+
+                        emissive:
+                            Math.random() > .5
+                                ? 0x78108f
+                                : 0x08789a,
+
+                        emissiveIntensity: 1.2,
+
+                        transparent: true,
+                        opacity: .85
+                    })
+                );
+
+            body.scale.y = .7;
+
+            group.add(body);
+
+
+            for (
+                let i = 0;
+                i < 7;
+                i++
+            ) {
+
+                const tentacle =
+                    new THREE.Mesh(
+                        new THREE.CylinderGeometry(
+                            .025,
+                            .012,
+                            1.3 +
+                            Math.random(),
+                            8
+                        ),
+                        new THREE.MeshBasicMaterial({
+                            color: 0xe7baff
+                        })
+                    );
+
+                tentacle.position.x =
+                    (i - 3) * .13;
+
+                tentacle.position.y = -.7;
+
+                group.add(tentacle);
+            }
+
+
+            group.position.set(
+                x, y, z
+            );
+
+            group.userData.jelly = true;
+
+            scene.add(group);
+        }
+
+
+        for (
+            let i = 0;
+            i < 18;
+            i++
+        ) {
+
+            jellyfish(
+                -12 +
+                Math.random() * 24,
+
+                1.8 +
+                Math.random() * 3,
+
+                -37.8
+            );
+        }
+
+
+        /* =========================================================
+           WATERFALL GARDEN
+        ========================================================= */
+
+        const garden =
+            new THREE.Mesh(
+                new THREE.BoxGeometry(
+                    14,
+                    .1,
+                    9
+                ),
+                new THREE.MeshStandardMaterial({
+                    color: 0x698a70
+                })
+            );
+
+        garden.position.set(
+            0,
+            .05,
+            30
+        );
+
+        scene.add(garden);
+
+
+        wall(
+            0,
+            3,
+            28,
+            10,
+            6,
+            .6,
+            new THREE.MeshStandardMaterial({
+                color: 0x536668
+            })
+        );
+
+
+        for (
+            let i = 0;
+            i < 25;
+            i++
+        ) {
+
+            const water =
+                new THREE.Mesh(
+                    new THREE.BoxGeometry(
+                        .04,
+                        1.5 +
+                        Math.random() * 2.5,
+                        .04
+                    ),
+                    new THREE.MeshBasicMaterial({
+                        color: 0x55dcff,
+                        transparent: true,
+                        opacity: .7
+                    })
+                );
+
+            water.position.set(
+                -4 +
+                Math.random() * 8,
+
+                1 +
+                Math.random() * 3,
+
+                27.6
+            );
+
+            scene.add(water);
+        }
+
+
+        const pool =
+            new THREE.Mesh(
+                new THREE.CylinderGeometry(
+                    4,
+                    4,
+                    .15,
+                    40
+                ),
+                new THREE.MeshPhysicalMaterial({
+                    color: 0x009db9,
+                    transparent: true,
+                    opacity: .7
+                })
+            );
+
+        pool.position.set(
+            0,
+            .15,
+            26.8
+        );
+
+        scene.add(pool);
+
+
+        /* =========================================================
+           PLANTS + FLOWERS
+        ========================================================= */
+
+        function plant(
+            x,
+            z
+        ) {
+
+            const stem =
+                new THREE.Mesh(
+                    new THREE.CylinderGeometry(
+                        .04,
+                        .06,
+                        1,
+                        8
+                    ),
+                    new THREE.MeshStandardMaterial({
+                        color: 0x317940
+                    })
+                );
+
+            stem.position.set(
+                x,
+                .5,
+                z
+            );
+
+            scene.add(stem);
+
+
+            for (
+                let i = 0;
+                i < 5;
+                i++
+            ) {
+
+                const leaf =
+                    new THREE.Mesh(
+                        new THREE.SphereGeometry(
+                            .17,
+                            10,
+                            8
+                        ),
+                        new THREE.MeshStandardMaterial({
+                            color: 0x4e9e51
+                        })
+                    );
+
+                leaf.scale.set(
+                    1,
+                    .35,
+                    2
+                );
+
+                leaf.position.set(
+                    x +
+                    (Math.random() - .5) * .5,
+
+                    .5 +
+                    Math.random() * .5,
+
+                    z +
+                    (Math.random() - .5) * .5
+                );
+
+                scene.add(leaf);
+            }
+        }
+
+
+        function flower(
+            x,
+            z
+        ) {
+
+            const center =
+                new THREE.Mesh(
+                    new THREE.SphereGeometry(
+                        .11,
+                        10,
+                        10
+                    ),
+                    new THREE.MeshStandardMaterial({
+                        color: 0xffd52e
+                    })
+                );
+
+            center.position.set(
+                x,
+                .75,
+                z
+            );
+
+            scene.add(center);
+
+
+            for (
+                let i = 0;
+                i < 6;
+                i++
+            ) {
+
+                const angle =
+                    i * Math.PI / 3;
+
+                const petal =
+                    new THREE.Mesh(
+                        new THREE.SphereGeometry(
+                            .12,
+                            10,
+                            10
+                        ),
+                        new THREE.MeshStandardMaterial({
+                            color:
+                                i % 2
+                                    ? 0xff6faf
+                                    : 0xa477ff
+                        })
+                    );
+
+                petal.position.set(
+                    x +
+                    Math.cos(angle) * .18,
+
+                    .75,
+
+                    z +
+                    Math.sin(angle) * .18
+                );
+
+                scene.add(petal);
+            }
+        }
+
+
+        for (
+            let z = -48;
+            z <= 48;
+            z += 5
+        ) {
+
+            plant(-5, z);
+            plant(5, z);
+
+            flower(-5, z + .5);
+            flower(5, z + .5);
+        }
+
+
+        /* =========================================================
+           BENCHES
+        ========================================================= */
+
+        function bench(
+            x,
+            z
+        ) {
+
+            const material =
+                new THREE.MeshStandardMaterial({
+                    color: 0x65442d
+                });
+
+
+            const seat =
+                new THREE.Mesh(
+                    new THREE.BoxGeometry(
+                        2.5,
+                        .18,
+                        .6
+                    ),
+                    material
+                );
+
+            seat.position.set(
+                x,
+                .8,
+                z
+            );
+
+            scene.add(seat);
+
+
+            for (
+                const dx of [-.9, .9]
+            ) {
+
+                const leg =
+                    new THREE.Mesh(
+                        new THREE.BoxGeometry(
+                            .15,
+                            .8,
+                            .15
+                        ),
+                        material
+                    );
+
+                leg.position.set(
+                    x + dx,
+                    .4,
+                    z
+                );
+
+                scene.add(leg);
+            }
+        }
+
+        bench(-5, 17);
+        bench(5, -2);
+        bench(-5, -31);
+
+
+        /* =========================================================
+           TEXT BOARDS
+        ========================================================= */
+
+        function makeText(
+            text,
+            x,
+            y,
+            z
+        ) {
+
+            const canvas =
+                document.createElement(
+                    "canvas"
+                );
+
+            canvas.width = 800;
+            canvas.height = 180;
+
+            const ctx =
+                canvas.getContext("2d");
+
+            ctx.fillStyle = "#063740";
+
+            ctx.fillRect(
+                0,
+                0,
+                800,
+                180
+            );
+
+            ctx.fillStyle = "#73edff";
+
+            ctx.font =
+                "bold 48px Arial";
+
+            ctx.textAlign = "center";
+
+            ctx.fillText(
+                text,
+                400,
+                110
+            );
+
+
+            const texture =
+                new THREE.CanvasTexture(
+                    canvas
+                );
+
+            const board =
+                new THREE.Mesh(
+                    new THREE.PlaneGeometry(
+                        5.5,
+                        1.2
+                    ),
+                    new THREE.MeshBasicMaterial({
+                        map: texture
+                    })
+                );
+
+            board.position.set(
+                x,
+                y,
+                z
+            );
+
+            scene.add(board);
+        }
+
+
+        /* =========================================================
+           ENTRANCE
+        ========================================================= */
+
+        makeText(
+            "AQUARIUM PARADISE",
+            0,
+            5,
+            49
+        );
+
+
+        /* Ticket Counter */
+
+        const counter =
+            new THREE.Mesh(
+                new THREE.BoxGeometry(
+                    6,
+                    1.2,
+                    2
+                ),
+                new THREE.MeshStandardMaterial({
+                    color: 0x344a4e
+                })
+            );
+
+        counter.position.set(
+            0,
+            .6,
+            44
+        );
+
+        scene.add(counter);
+
+
+        makeText(
+            "TICKET COUNTER",
+            0,
+            3,
+            42.7
+        );
+
+
+        /* =========================================================
+           EXIT
+        ========================================================= */
+
+        makeText(
+            "THANK YOU — EXIT",
+            0,
+            3.5,
+            -51.5
+        );
+
+
+        /* =========================================================
+           BUBBLES
+        ========================================================= */
+
+        const bubbles = [];
+
+        for (
+            let i = 0;
+            i < 100;
+            i++
+        ) {
+
+            const bubble =
+                new THREE.Mesh(
+                    new THREE.SphereGeometry(
+                        .025 +
+                        Math.random() * .06,
+                        8,
+                        8
+                    ),
+                    new THREE.MeshBasicMaterial({
+                        color: 0x8beaff,
+                        transparent: true,
+                        opacity: .55
+                    })
+                );
+
+            bubble.position.set(
+                -14 +
+                Math.random() * 28,
+
+                .5 +
+                Math.random() * 6,
+
+                -48 +
+                Math.random() * 90
+            );
+
+            scene.add(bubble);
+
+            bubbles.push(bubble);
+        }
+
+
+        /* =========================================================
+           CONTROLS
+        ========================================================= */
+
+        const controls =
+            new PointerLockControls(
+                camera,
+                document.body
+            );
+
+        document.body.addEventListener(
+            "click",
+            () => {
+                controls.lock();
+
+                document.getElementById(
+                    "message"
+                ).style.display = "none";
+            }
+        );
+
+
+        const keys = {};
+
+        document.addEventListener(
+            "keydown",
+            e => {
+                keys[e.code] = true;
+            }
+        );
+
+        document.addEventListener(
+            "keyup",
+            e => {
+                keys[e.code] = false;
+            }
+        );
+
+
+        /* =========================================================
+           ANIMATION
+        ========================================================= */
+
+        const clock =
+            new THREE.Clock();
+
+
+        function animate() {
+
+            requestAnimationFrame(
+                animate
+            );
+
+            const time =
+                clock.getElapsedTime();
+
+
+            /* Movement */
+
+            const speed = .075;
+
+            if (
+                keys["KeyW"] ||
+                keys["ArrowUp"]
+            ) {
+
+                controls.moveForward(
+                    speed
+                );
+            }
+
+            if (
+                keys["KeyS"] ||
+                keys["ArrowDown"]
+            ) {
+
+                controls.moveForward(
+                    -speed
+                );
+            }
+
+            if (
+                keys["KeyA"] ||
+                keys["ArrowLeft"]
+            ) {
+
+                controls.moveRight(
+                    -speed
+                );
+            }
+
+            if (
+                keys["KeyD"] ||
+                keys["ArrowRight"]
+            ) {
+
+                controls.moveRight(
+                    speed
+                );
+            }
+
+
+            /* Keep player inside */
+
+            camera.position.x =
+                THREE.MathUtils.clamp(
+                    camera.position.x,
+                    -15,
+                    15
+                );
+
+            camera.position.z =
+                THREE.MathUtils.clamp(
+                    camera.position.z,
+                    -50,
+                    48
+                );
+
+
+            /* Fish */
+
+            scene.traverse(
+                object => {
+
+                    if (
+                        object.userData &&
+                        object.userData.speed
+                    ) {
+
+                        object.position.x =
+                            object.userData.baseX +
+                            Math.sin(
+                                time *
+                                object.userData.speed
+                            ) *
+                            object.userData.range;
+
+                        object.position.y =
+                            object.userData.baseY +
+                            Math.sin(
+                                time * 1.8 +
+                                object.position.x
+                            ) * .15;
+
+                        object.rotation.z =
+                            Math.sin(
+                                time * 2
+                            ) * .05;
+                    }
+
+
+                    /* Jellyfish */
+
+                    if (
+                        object.userData &&
+                        object.userData.jelly
+                    ) {
+
+                        object.position.y +=
+                            Math.sin(
+                                time +
+                                object.position.x
+                            ) * .002;
+                    }
+
+                }
+            );
+
+
+            /* Bubbles */
+
+            bubbles.forEach(
+                bubble => {
+
+                    bubble.position.y += .006;
+
+                    if (
+                        bubble.position.y > 7
+                    ) {
+
+                        bubble.position.y = .5;
+                    }
+                }
+            );
+
+
+            renderer.render(
+                scene,
+                camera
+            );
+        }
+
+
+        /* =========================================================
+           RESIZE
+        ========================================================= */
+
+        window.addEventListener(
+            "resize",
+            () => {
+
+                camera.aspect =
+                    window.innerWidth /
+                    window.innerHeight;
+
+                camera.updateProjectionMatrix();
+
+                renderer.setSize(
+                    window.innerWidth,
+                    window.innerHeight
+                );
+            }
+        );
+
+
+        /* =========================================================
+           START
+        ========================================================= */
+
+        setTimeout(
+            () => {
+                document.getElementById(
+                    "loading"
+                ).style.display = "none";
+            },
+            1500
+        );
+
+        animate();
+
+    </script>
+
+</body>
+
+</html>
